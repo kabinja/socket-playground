@@ -24,7 +24,7 @@
                         <manifest>
                             <addClasspath>true</addClasspath>
                             <classpathPrefix>lib/</classpathPrefix>
-                            <mainClass>org.example.SocketPlayground</mainClass>
+                            <mainClass>org.example.Client</mainClass>
                         </manifest>
                     </archive>
                 </configuration>
