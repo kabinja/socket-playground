@@ -3,18 +3,17 @@ package org.example;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.Arrays;
 
 public class ForwardHandler implements Runnable {
     private static final int BUFFER_SIZE = 8192;
 
     private final InputStream inputStream;
     private final OutputStream outputStream;
-    private final RequestHandler requestHandler;
 
-    public ForwardHandler(RequestHandler requestHandler, InputStream inputStream, OutputStream outputStream) {
+    public ForwardHandler(InputStream inputStream, OutputStream outputStream) {
         this.inputStream = inputStream;
         this.outputStream = outputStream;
-        this.requestHandler = requestHandler;
     }
 
     @Override
@@ -22,12 +21,13 @@ public class ForwardHandler implements Runnable {
         byte[] buffer = new byte[BUFFER_SIZE];
 
         try {
-            while (true) {
                 int bytesRead = inputStream.read(buffer);
-                if (bytesRead == -1) break;
-                outputStream.write(buffer, 0, bytesRead);
-                outputStream.flush();
-            }
+                if (bytesRead != -1){
+                    outputStream.write(buffer, 0, bytesRead);
+                    outputStream.flush();
+                    System.out.println("Sent message: " + new String(Arrays.copyOfRange(buffer, 0, bytesRead)));
+                }
+
         } catch (IOException e) {
             System.err.printf(
                     "Forwarding interupted: [%s] %s%n",
@@ -35,7 +35,5 @@ public class ForwardHandler implements Runnable {
                     e.getMessage()
             );
         }
-
-        requestHandler.connectionBroken();
     }
 }

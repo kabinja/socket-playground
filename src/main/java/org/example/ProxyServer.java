@@ -21,8 +21,11 @@ public class ProxyServer implements Runnable{
 
     public static void startManagedThread(Runnable runnable){
         Thread thread = new Thread(runnable);
-        servicingThreads.add(thread);
         thread.start();
+
+        synchronized(servicingThreads) {
+            servicingThreads.add(thread);
+        }
     }
 
     public ProxyServer(int port) {
