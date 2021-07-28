@@ -19,17 +19,14 @@ public class RequestHandler implements Runnable {
             clientSocket.setKeepAlive(true);
 
             while (true) {
-                try {
-                    final DataInputStream reader = new DataInputStream(this.clientSocket.getInputStream());
-                    final Socket serverSocket = extractServerSocket(reader);
-                    final byte[] payload = extractPayload(reader);
+                final DataInputStream reader = new DataInputStream(this.clientSocket.getInputStream());
+                final Socket serverSocket = extractServerSocket(reader);
+                final byte[] payload = extractPayload(reader);
+
+                if(serverSocket != null){
                     sendPayload(serverSocket.getOutputStream(), payload);
                 }
-                catch (IOException e){
-                    e.printStackTrace();
-                }
             }
-
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -52,12 +49,18 @@ public class RequestHandler implements Runnable {
                 serverSocket = serverSockets.get(address);
             }
             else{
-                System.out.println("Creating new connection: " + address);
-                serverSocket = new Socket(address.host, address.port);
-                serverSocket.setKeepAlive(true);
+                try {
+                    System.out.println("Creating new connection: " + address);
+                    serverSocket = new Socket(address.host, address.port);
+                    serverSocket.setKeepAlive(true);
 
-                serverSockets.put(address, serverSocket);
-                ProxyServer.startManagedThread(new ForwardHandler(serverSocket.getInputStream(), clientSocket.getOutputStream()));
+                    serverSockets.put(address, serverSocket);
+                    ProxyServer.startManagedThread(new ForwardHandler(serverSocket.getInputStream(), clientSocket.getOutputStream()));
+                }
+                catch (IOException e){
+                    serverSockets.remove(address);
+                    serverSocket = null;
+                }
             }
         }
 
