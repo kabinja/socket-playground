@@ -14,7 +14,7 @@ import java.nio.charset.StandardCharsets;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-public class ProxyServerTest {
+class ProxyServerTest {
     @Test
     void testSingleConnection() throws IOException, InterruptedException {
         final ClassLauncher proxyServerProcess = new ClassLauncher(ProxyServer.class);
