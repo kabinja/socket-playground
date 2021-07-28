@@ -13,9 +13,9 @@ public class Client {
         )
         {
             sendFrame("localhost:8090", out, "test\n");
-            //sendFrame("localhost:8091", out, "Normally, a server runs on a specific computer and has a socket that is bound to a specific port number.");
-            //sendFrame("localhost:8092", out, "The server just waits, listening to the socket for a client to make a connection request.");
-            //sendFrame("localhost:8093", out, "The client knows the hostname of the machine on which the server is running and the port number on which the server is listening. ");
+            sendFrame("localhost:8090", out, "Normally, a server runs on a specific computer and has a socket that is bound to a specific port number.\n");
+            sendFrame("localhost:8091", out, "The server just waits, listening to the socket for a client to make a connection request.\n");
+            sendFrame("localhost:8091", out, "The client knows the hostname of the machine on which the server is running and the port number on which the server is listening.\n");
 
             String line = in.readLine();
             while( line != null )

@@ -23,8 +23,7 @@ public class RequestHandler implements Runnable {
                     final DataInputStream reader = new DataInputStream(this.clientSocket.getInputStream());
                     final Socket serverSocket = extractServerSocket(reader);
                     final byte[] payload = extractPayload(reader);
-
-                    ProxyServer.startManagedThread(new ForwardHandler(new ByteArrayInputStream(payload), serverSocket.getOutputStream()));
+                    sendPayload(serverSocket.getOutputStream(), payload);
                 }
                 catch (IOException e){
                     e.printStackTrace();
@@ -75,6 +74,11 @@ public class RequestHandler implements Runnable {
         }
 
         return payload;
+    }
+
+    private static void sendPayload(OutputStream outputStream, byte[] payload) throws IOException {
+        outputStream.write(payload);
+        outputStream.flush();
     }
 
     private static class Address{

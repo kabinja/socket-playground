@@ -4,10 +4,14 @@ import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
 
-public class Server {
-    public static void main(String[] args) {
-        int port = 8090;
+public abstract class Server {
+    private final int port;
 
+    protected Server(int port) {
+        this.port = port;
+    }
+
+    void listen(){
         try (ServerSocket serverSocket = new ServerSocket(port)) {
 
             System.out.println("Server is listening on port " + port);
@@ -26,9 +30,7 @@ public class Server {
                 String text;
                 while((text = reader.readLine()) != null) {
                     System.out.println("Received: " + text);
-                    String reverseText = new StringBuilder(text).reverse().toString();
-                    writer.println("Server: " + reverseText);
-
+                    writer.println("Server: " + transform(text));
                 }
 
                 socket.close();
@@ -39,4 +41,6 @@ public class Server {
             ex.printStackTrace();
         }
     }
+
+    abstract String transform(String payload);
 }
