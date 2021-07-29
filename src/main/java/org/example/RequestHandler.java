@@ -19,12 +19,17 @@ public class RequestHandler implements Runnable {
             clientSocket.setKeepAlive(true);
 
             while (true) {
-                final DataInputStream reader = new DataInputStream(this.clientSocket.getInputStream());
-                final Socket serverSocket = extractServerSocket(reader);
-                final byte[] payload = extractPayload(reader);
+                final ProxyFrame proxyFrame = ProxyFrame.read(this.clientSocket.getInputStream());
 
-                if(serverSocket != null){
+                try{
+                    final Socket serverSocket = getServerSocket(proxyFrame);
+                    final byte[] payload = proxyFrame.getPayload();
                     sendPayload(serverSocket.getOutputStream(), payload);
+                }
+                catch (ConnectException e){
+                    if(e.getMessage().contains("Connection refused: connect")){
+                        ProxyFrame.writeError(proxyFrame.getAddress(), ProxyFrame.Error.REFUSED, clientSocket.getOutputStream());
+                    }
                 }
             }
         } catch (IOException e) {
@@ -32,16 +37,8 @@ public class RequestHandler implements Runnable {
         }
     }
 
-    private Socket extractServerSocket(final DataInputStream reader) throws IOException {
-        int offset = reader.readInt();
-        byte[] buffer = new byte[offset];
-
-        final int size = reader.read(buffer, 0, offset);
-        if(size != offset){
-            throw new SocketException("Read " + size + " bytes instead of " + offset);
-        }
-
-        final Address address = new Address(buffer);
+    private Socket getServerSocket(final ProxyFrame proxyFrame) throws IOException {
+        final Address address = new Address(proxyFrame.getAddress());
 
         Socket serverSocket;
         synchronized (serverSockets){
@@ -55,11 +52,11 @@ public class RequestHandler implements Runnable {
                     serverSocket.setKeepAlive(true);
 
                     serverSockets.put(address, serverSocket);
-                    ProxyServer.startManagedThread(new ForwardHandler(serverSocket.getInputStream(), clientSocket.getOutputStream()));
+                    ProxyServer.startManagedThread(new ForwardHandler(proxyFrame.getAddress(), serverSocket.getInputStream(), clientSocket.getOutputStream()));
                 }
                 catch (IOException e){
                     serverSockets.remove(address);
-                    serverSocket = null;
+                    throw e;
                 }
             }
         }
@@ -67,21 +64,10 @@ public class RequestHandler implements Runnable {
         return serverSocket;
     }
 
-    private static byte[] extractPayload(final DataInputStream reader) throws IOException {
-        int offset = reader.readInt();
-        byte[] payload = new byte[offset];
-
-        final int size = reader.read(payload, 0, offset);
-        if(size != offset){
-            throw new SocketException("Read " + size + " bytes instead of " + offset);
-        }
-
-        return payload;
-    }
-
     private static void sendPayload(OutputStream outputStream, byte[] payload) throws IOException {
         outputStream.write(payload);
         outputStream.flush();
+        System.out.println("[From client to server] " + new String(payload));
     }
 
     private static class Address{

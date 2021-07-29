@@ -1,4 +1,4 @@
-package org.example.utils;
+package org.example.helpers;
 
 public class CapitalizeServer extends Server {
     protected CapitalizeServer(int port) {

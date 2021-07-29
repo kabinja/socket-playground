@@ -1,16 +1,15 @@
 package org.example;
 
 import lu.uni.serval.commons.runner.utils.process.ClassLauncher;
-import org.example.utils.CapitalizeServer;
-import org.example.utils.InvertServer;
+import org.example.helpers.CapitalizeServer;
+import org.example.helpers.InvertServer;
 import org.junit.jupiter.api.Test;
 
-import java.io.BufferedReader;
-import java.io.DataOutputStream;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.net.Socket;
-import java.nio.charset.StandardCharsets;
+import java.util.HashSet;
+import java.util.Optional;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -23,14 +22,14 @@ class ProxyServerTest {
         proxyServerProcess.execute(false);
         invertServerProcess.execute(false);
 
-        try(
-                Socket socket = new Socket("localhost", 8085);
-                DataOutputStream out = new DataOutputStream(socket.getOutputStream());
-                BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()))
-        )
+        try(Socket socket = new Socket("localhost", 8085))
         {
-            sendFrame("localhost:8090", out, "test\n");
-            assertEquals("Server: tset", in.readLine());
+            ProxyFrame.writePayload("localhost:8090", "test" + System.lineSeparator(), socket.getOutputStream());
+            final ProxyFrame frame = ProxyFrame.read(socket.getInputStream());
+
+            assertEquals("localhost:8090", new String(frame.getAddress()));
+            assertEquals("Server: tset" + System.lineSeparator(), new String(frame.getPayload()));
+            assertNull(frame.getError());
         }
         finally {
             proxyServerProcess.kill();
@@ -46,19 +45,33 @@ class ProxyServerTest {
         proxyServerProcess.execute(false);
         invertServerProcess.execute(false);
 
-        try(
-                Socket socket = new Socket("localhost", 8085);
-                DataOutputStream out = new DataOutputStream(socket.getOutputStream());
-                BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()))
-        )
+        try(Socket socket = new Socket("localhost", 8085))
         {
-            sendFrame("localhost:8090", out, "test1\n");
-            sendFrame("localhost:8090", out, "test2\n");
-            sendFrame("localhost:8090", out, "test3\n");
+            ProxyFrame.writePayload("localhost:8090", "test1" + System.lineSeparator(), socket.getOutputStream());
+            ProxyFrame.writePayload("localhost:8090", "test2" + System.lineSeparator(), socket.getOutputStream());
+            ProxyFrame.writePayload("localhost:8090", "test3" + System.lineSeparator(), socket.getOutputStream());
 
-            assertEquals("Server: 1tset", in.readLine());
-            assertEquals("Server: 2tset", in.readLine());
-            assertEquals("Server: 3tset", in.readLine());
+            // The server might decide to put two frames in one, depending on the speed
+            // so in this case we don't know how many frames will arrive but we know the
+            // result of the payload which is the concatenation of all the messages.
+            String payload = "";
+            int lines = 0;
+            while (lines < 3){
+                final ProxyFrame frame = ProxyFrame.read(socket.getInputStream());
+                assertEquals("localhost:8090", new String(frame.getAddress()));
+                assertNull(frame.getError());
+
+                payload += new String(frame.getPayload());
+                lines = payload.split(System.lineSeparator()).length;
+            }
+
+            assertEquals(
+                    "Server: 1tset" + System.lineSeparator()
+                    + "Server: 2tset" + System.lineSeparator()
+                    + "Server: 3tset" + System.lineSeparator()
+                    , payload
+            );
+
         }
         finally {
             proxyServerProcess.kill();
@@ -76,19 +89,30 @@ class ProxyServerTest {
         invertServerProcess.execute(false);
         capitalizeServerProcess.execute(false);
 
-        try(
-                Socket socket = new Socket("localhost", 8085);
-                DataOutputStream out = new DataOutputStream(socket.getOutputStream());
-                BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()))
-        )
+        try(Socket socket = new Socket("localhost", 8085))
         {
-            sendFrame("localhost:8090", out, "test1\n");
-            sendFrame("localhost:8090", out, "test2\n");
-            sendFrame("localhost:8091", out, "test3\n");
+            ProxyFrame.writePayload("localhost:8090", "test" + System.lineSeparator(), socket.getOutputStream());
+            ProxyFrame.writePayload("localhost:8091", "test" + System.lineSeparator(), socket.getOutputStream());
 
-            assertEquals("Server: 1tset", in.readLine());
-            assertEquals("Server: 2tset", in.readLine());
-            assertEquals("Server: TEST3", in.readLine());
+            // We do not know in which order the frame will come back.
+            // Thus, wait for both of them then identify them by their address
+            final Set<ProxyFrame> frames = new HashSet<>(2);
+            frames.add(ProxyFrame.read(socket.getInputStream()));
+            frames.add(ProxyFrame.read(socket.getInputStream()));
+
+            final Optional<ProxyFrame> frame8090 = frames.stream()
+                    .filter(f -> new String(f.getAddress()).equals("localhost:8090"))
+                    .findFirst();
+
+            assertTrue(frame8090.isPresent());
+            assertEquals("Server: tset" + System.lineSeparator(), new String(frame8090.get().getPayload()));
+
+            final Optional<ProxyFrame> frame8091 = frames.stream()
+                    .filter(f -> new String(f.getAddress()).equals("localhost:8091"))
+                    .findFirst();
+
+            assertTrue(frame8091.isPresent());
+            assertEquals("Server: TEST" + System.lineSeparator(), new String(frame8091.get().getPayload()));
         }
         finally {
             proxyServerProcess.kill();
@@ -97,14 +121,22 @@ class ProxyServerTest {
         }
     }
 
-    private static void sendFrame(String destination, DataOutputStream out, String message) throws IOException {
-        final byte[] destinationBytes = destination.getBytes(StandardCharsets.UTF_8);
-        final byte[] payloadBytes = message.getBytes(StandardCharsets.UTF_8);
+    @Test
+    void testNonExistingDestination() throws IOException, InterruptedException {
+        final ClassLauncher proxyServerProcess = new ClassLauncher(ProxyServer.class);
 
-        out.writeInt(destinationBytes.length);
-        out.write(destinationBytes);
-        out.writeInt(payloadBytes.length);
-        out.write(payloadBytes);
-        out.flush();
+        proxyServerProcess.execute(false);
+
+        try(Socket socket = new Socket("localhost", 8085))
+        {
+            ProxyFrame.writePayload("localhost:8090", "test" + System.lineSeparator(), socket.getOutputStream());
+            final ProxyFrame frame = ProxyFrame.read(socket.getInputStream());
+
+            assertEquals("localhost:8090", new String(frame.getAddress()));
+            assertEquals(ProxyFrame.Error.REFUSED, frame.getError());
+        }
+        finally {
+            proxyServerProcess.kill();
+        }
     }
 }

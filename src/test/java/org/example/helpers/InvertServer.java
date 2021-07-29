@@ -1,4 +1,4 @@
-package org.example.utils;
+package org.example.helpers;
 
 public class InvertServer extends Server {
     protected InvertServer(int port) {

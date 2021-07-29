@@ -8,10 +8,12 @@ import java.util.Arrays;
 public class ForwardHandler implements Runnable {
     private static final int BUFFER_SIZE = 8192;
 
+    private final byte[] address;
     private final InputStream inputStream;
     private final OutputStream outputStream;
 
-    public ForwardHandler(InputStream inputStream, OutputStream outputStream) {
+    public ForwardHandler(byte[] address, InputStream inputStream, OutputStream outputStream) {
+        this.address = address;
         this.inputStream = inputStream;
         this.outputStream = outputStream;
     }
@@ -24,9 +26,8 @@ public class ForwardHandler implements Runnable {
             while (true){
                 int bytesRead = inputStream.read(buffer);
                 if (bytesRead != -1){
-                    outputStream.write(buffer, 0, bytesRead);
-                    outputStream.flush();
-                    System.out.println("Sent message: " + new String(Arrays.copyOfRange(buffer, 0, bytesRead)));
+                    ProxyFrame.writePayload(address, Arrays.copyOfRange(buffer, 0, bytesRead), outputStream);
+                    System.out.println("[From server to client] " + new String(Arrays.copyOfRange(buffer, 0, bytesRead)));
                 }
             }
         } catch (IOException e) {

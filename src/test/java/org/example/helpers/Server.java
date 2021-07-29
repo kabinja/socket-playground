@@ -1,4 +1,4 @@
-package org.example.utils;
+package org.example.helpers;
 
 import java.io.*;
 import java.net.ServerSocket;

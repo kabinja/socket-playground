@@ -44,6 +44,7 @@ public class ProxyServer implements Runnable{
         while(running){
             try {
                 final Socket socket = clientSocket.accept();
+                System.out.println("Connection established");
                 startManagedThread(new RequestHandler(socket));
             } catch (SocketException e) {
                 System.out.println("Server closed");
