@@ -1,4 +1,6 @@
-package org.example;
+package org.example.proxy.custom;
+
+import org.example.proxy.Convertor;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -15,10 +17,10 @@ public class ProxyFrame {
         if(payload != null){
             this.frame = new byte[][]{
                     Section.ADDRESS.getCode(),
-                    toByteArray(address.length),
+                    Convertor.toByteArray(address.length),
                     address,
                     Section.PAYLOAD.getCode(),
-                    toByteArray(payload.length),
+                    Convertor.toByteArray(payload.length),
                     payload
             };
 
@@ -34,7 +36,7 @@ public class ProxyFrame {
     private ProxyFrame(byte[] address, Error error){
         this.frame = new byte[][]{
                 Section.ADDRESS.getCode(),
-                toByteArray(address.length),
+                Convertor.toByteArray(address.length),
                 address,
                 Section.ERROR.getCode(),
                 error.getCode()
@@ -113,33 +115,13 @@ public class ProxyFrame {
     }
 
     private static int readLength(InputStream inputStream) throws IOException {
-        int length = toInt(inputStream.readNBytes(4));
+        int length = Convertor.toInt(inputStream.readNBytes(4));
 
         if(length < 1){
             throw new IOException("Length must be strictly greater than 0!");
         }
 
         return length;
-    }
-
-    public static byte[] toByteArray(int value){
-        return new byte[] {
-                (byte)((value >> 24) & 0xff),
-                (byte)((value >> 16) & 0xff),
-                (byte)((value >> 8) & 0xff),
-                (byte)((value >> 0) & 0xff),
-        };
-    }
-
-    public static int toInt(byte[] bytes){
-        if(bytes.length != 4){
-            throw new IllegalArgumentException("int must be encoded on 4 bytes, received " + bytes.length + " instead!");
-        }
-
-        return (0xff & bytes[0]) << 24
-                | (0xff & bytes[1]) << 16
-                | (0xff & bytes[2]) << 8
-                | (0xff & bytes[3]) << 0;
     }
 
     public enum Section {

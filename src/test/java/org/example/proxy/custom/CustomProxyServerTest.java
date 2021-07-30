@@ -1,4 +1,4 @@
-package org.example;
+package org.example.proxy.custom;
 
 import lu.uni.serval.commons.runner.utils.process.ClassLauncher;
 import org.example.helpers.CapitalizeServer;
@@ -13,10 +13,10 @@ import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-class ProxyServerTest {
+class CustomProxyServerTest {
     @Test
     void testSingleConnection() throws IOException, InterruptedException {
-        final ClassLauncher proxyServerProcess = new ClassLauncher(ProxyServer.class);
+        final ClassLauncher proxyServerProcess = new ClassLauncher(CustomProxyServer.class);
         final ClassLauncher invertServerProcess = new ClassLauncher(InvertServer.class);
 
         proxyServerProcess.execute(false);
@@ -39,7 +39,7 @@ class ProxyServerTest {
 
     @Test
     void testSingleConnectionMultipleFrames() throws IOException, InterruptedException {
-        final ClassLauncher proxyServerProcess = new ClassLauncher(ProxyServer.class);
+        final ClassLauncher proxyServerProcess = new ClassLauncher(CustomProxyServer.class);
         final ClassLauncher invertServerProcess = new ClassLauncher(InvertServer.class);
 
         proxyServerProcess.execute(false);
@@ -81,7 +81,7 @@ class ProxyServerTest {
 
     @Test
     void testMultipleConnectionMultipleFrames() throws IOException, InterruptedException {
-        final ClassLauncher proxyServerProcess = new ClassLauncher(ProxyServer.class);
+        final ClassLauncher proxyServerProcess = new ClassLauncher(CustomProxyServer.class);
         final ClassLauncher invertServerProcess = new ClassLauncher(InvertServer.class);
         final ClassLauncher capitalizeServerProcess = new ClassLauncher(CapitalizeServer.class);
 
@@ -123,7 +123,7 @@ class ProxyServerTest {
 
     @Test
     void testNonExistingDestination() throws IOException, InterruptedException {
-        final ClassLauncher proxyServerProcess = new ClassLauncher(ProxyServer.class);
+        final ClassLauncher proxyServerProcess = new ClassLauncher(CustomProxyServer.class);
 
         proxyServerProcess.execute(false);
 

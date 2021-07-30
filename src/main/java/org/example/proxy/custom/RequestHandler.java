@@ -1,11 +1,11 @@
-package org.example;
+package org.example.proxy.custom;
 
 import java.io.*;
 import java.net.*;
 import java.util.HashMap;
 import java.util.Map;
 
-public class RequestHandler implements Runnable {
+class RequestHandler implements Runnable {
     private final Socket clientSocket;
     private final Map<Address, Socket> serverSockets = new HashMap<>();
 
@@ -52,7 +52,7 @@ public class RequestHandler implements Runnable {
                     serverSocket.setKeepAlive(true);
 
                     serverSockets.put(address, serverSocket);
-                    ProxyServer.startManagedThread(new ForwardHandler(proxyFrame.getAddress(), serverSocket.getInputStream(), clientSocket.getOutputStream()));
+                    CustomProxyServer.startManagedThread(new ForwardHandler(proxyFrame.getAddress(), serverSocket.getInputStream(), clientSocket.getOutputStream()));
                 }
                 catch (IOException e){
                     serverSockets.remove(address);

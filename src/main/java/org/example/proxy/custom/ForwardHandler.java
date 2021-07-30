@@ -1,11 +1,11 @@
-package org.example;
+package org.example.proxy.custom;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Arrays;
 
-public class ForwardHandler implements Runnable {
+class ForwardHandler implements Runnable {
     private static final int BUFFER_SIZE = 8192;
 
     private final byte[] address;

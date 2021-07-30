@@ -17,23 +17,25 @@ public abstract class Server {
             System.out.println("Server is listening on port " + port);
 
             while (true) {
-                Socket socket = serverSocket.accept();
-                System.out.println("New client connected");
+                try(Socket socket = serverSocket.accept()){
+                    System.out.println("New client connected");
 
-                InputStream input = socket.getInputStream();
-                BufferedReader reader = new BufferedReader(new InputStreamReader(input));
+                    InputStream input = socket.getInputStream();
+                    BufferedReader reader = new BufferedReader(new InputStreamReader(input));
 
-                OutputStream output = socket.getOutputStream();
-                PrintWriter writer = new PrintWriter(output, true);
+                    OutputStream output = socket.getOutputStream();
+                    PrintWriter writer = new PrintWriter(output, true);
 
 
-                String text;
-                while((text = reader.readLine()) != null) {
-                    System.out.println("Received: " + text);
-                    writer.println("Server: " + transform(text));
+                    String text;
+                    while((text = reader.readLine()) != null) {
+                        System.out.println("Received: " + text);
+                        writer.println("Server: " + transform(text));
+                    }
                 }
-
-                socket.close();
+                finally {
+                    System.out.println("Socket Closed");
+                }
             }
 
         } catch (IOException ex) {

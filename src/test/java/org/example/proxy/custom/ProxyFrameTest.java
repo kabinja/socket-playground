@@ -1,5 +1,6 @@
-package org.example;
+package org.example.proxy.custom;
 
+import org.example.proxy.Convertor;
 import org.junit.jupiter.api.Test;
 
 import java.io.ByteArrayInputStream;
@@ -34,27 +35,5 @@ class ProxyFrameTest {
         assertEquals("localhost:8080", new String(frame.getAddress()));
         assertEquals(ProxyFrame.Error.BUSY, frame.getError());
         assertNull(frame.getPayload());
-    }
-
-    @Test
-    void testByteArrayToInt(){
-        assertEquals(10, ProxyFrame.toInt(intToBytes(10)));
-        assertEquals(-1, ProxyFrame.toInt(intToBytes(-1)));
-        assertEquals(0, ProxyFrame.toInt(intToBytes(0)));
-        assertEquals(500, ProxyFrame.toInt(intToBytes(500)));
-    }
-
-    @Test
-    void testIntToByteArray(){
-        assertArrayEquals(intToBytes(10), ProxyFrame.toByteArray(10));
-        assertArrayEquals(intToBytes(-1), ProxyFrame.toByteArray(-1));
-        assertArrayEquals(intToBytes(0), ProxyFrame.toByteArray(0));
-        assertArrayEquals(intToBytes(500), ProxyFrame.toByteArray(500));
-    }
-
-    private static byte[] intToBytes( final int i ) {
-        ByteBuffer bb = ByteBuffer.allocate(4);
-        bb.putInt(i);
-        return bb.array();
     }
 }

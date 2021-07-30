@@ -1,22 +1,27 @@
-package org.example;
+package org.example.proxy.custom;
 
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
 import java.util.HashSet;
-import java.util.Scanner;
 import java.util.Set;
 
-public class ProxyServer implements Runnable{
+public class CustomProxyServer {
     private static final Set<Thread> servicingThreads = new HashSet<>();
-
     private ServerSocket clientSocket;
-    private volatile boolean running = true;
 
     public static void main(String[] args) {
-        ProxyServer proxyServer = new ProxyServer(8085);
-        proxyServer.listen();
+        try {
+            CustomProxyServer customProxyServer = new CustomProxyServer(8085);
+            customProxyServer.listen();
+        } catch (IOException e) {
+            System.err.printf(
+                    "Failed to start server: [%s] %s%n",
+                    e.getClass().getSimpleName(),
+                    e.getMessage()
+            );
+        }
     }
 
     public static void startManagedThread(Runnable runnable){
@@ -28,20 +33,13 @@ public class ProxyServer implements Runnable{
         }
     }
 
-    public ProxyServer(int port) {
-        try {
-            this.clientSocket = new ServerSocket(port);
-            this.running = true;
-
-            System.out.println("Waiting for client on port " + clientSocket.getLocalPort() + "..");
-        }
-        catch (IOException io) {
-            System.out.println("IO exception when connecting to client");
-        }
+    public CustomProxyServer(int port) throws IOException {
+        this.clientSocket = new ServerSocket(port);
+        System.out.println("Waiting for client on port " + clientSocket.getLocalPort() + "..");
     }
 
     public void listen(){
-        while(running){
+        while(true){
             try {
                 final Socket socket = clientSocket.accept();
                 System.out.println("Connection established");
@@ -56,7 +54,6 @@ public class ProxyServer implements Runnable{
 
     private void closeServer(){
         System.out.println("\nClosing Server..");
-        running = false;
 
         try{
             for(Thread thread : servicingThreads){
@@ -79,20 +76,4 @@ public class ProxyServer implements Runnable{
         }
 
     }
-
-    @Override
-    public void run() {
-        try(Scanner scanner = new Scanner(System.in)){
-            while(running){
-                System.out.println("Type \"shutdown\" to close server.");
-                final String command = scanner.nextLine();
-
-                if(command.equals("shutdown")){
-                    running = false;
-                    closeServer();
-                }
-            }
-        }
-    }
-
 }
