@@ -1,16 +1,18 @@
 package org.example.proxy.socks;
 
+import org.example.proxy.ThreadUtils;
+
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class SocksProxyServer {
-    private static final Set<Thread> servicingThreads = new HashSet<>();
-
+    private final ExecutorService executor = Executors.newCachedThreadPool();
     private ServerSocket clientSocket;
+    private volatile boolean running = true;
 
     public static void main(String[] args) {
         try {
@@ -25,27 +27,38 @@ public class SocksProxyServer {
         }
     }
 
-    public static void startManagedThread(Runnable runnable){
-        Thread thread = new Thread(runnable);
-        servicingThreads.add(thread);
-        thread.start();
-    }
-
     public SocksProxyServer(int port) throws IOException {
         this.clientSocket = new ServerSocket(port);
-        System.out.println("Waiting for client on port " + clientSocket.getLocalPort() + "..");
+        executor.submit(new MessagingHandler(this));
+        System.out.println("Waiting for client on port " + clientSocket.getLocalPort() + "...");
     }
 
     public void listen(){
-        while(true){
+        while(running){
             try {
                 final Socket socket = clientSocket.accept();
-                startManagedThread(new RequestHandler(socket));
+                executor.submit(new RequestHandler(socket));
             } catch (SocketException e) {
                 System.out.println("Server closed");
             } catch (IOException e) {
                 e.printStackTrace();
             }
         }
+
+        try {
+            this.clientSocket.close();
+        } catch (IOException e) {
+            System.err.printf(
+                    "Failed to close SOCKS socket: [%s] %s%n",
+                    e.getClass().getSimpleName(),
+                    e.getMessage()
+            );
+        }
+
+        ThreadUtils.shutDown(executor);
+    }
+
+    public void stop(){
+        running = false;
     }
 }

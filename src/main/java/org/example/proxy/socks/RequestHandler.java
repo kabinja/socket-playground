@@ -1,15 +1,20 @@
 package org.example.proxy.socks;
 
 import org.example.proxy.Convertor;
+import org.example.proxy.ThreadUtils;
 import org.example.proxy.socks.constants.*;
 
 import java.io.*;
 import java.net.*;
 import java.nio.charset.StandardCharsets;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 class RequestHandler implements Runnable {
     private final Socket clientSocket;
     private final SocksSettings settings = new SocksSettings();
+    private final ExecutorService toServerExecutor = Executors.newSingleThreadExecutor();
+    private final ExecutorService toClientExecutor = Executors.newSingleThreadExecutor();
 
     private Socket serverSocket;
 
@@ -26,8 +31,19 @@ class RequestHandler implements Runnable {
             serverSocket = establishConnection();
             System.out.printf("Connection Established with %s:%d%n", serverSocket.getInetAddress().getHostAddress(), serverSocket.getPort());
 
-            startForwarding(ForwardHandler.Direction.CLIENT_TO_SERVER, clientSocket.getInputStream(), serverSocket.getOutputStream());
-            startForwarding(ForwardHandler.Direction.SERVER_TO_CLIENT, serverSocket.getInputStream(), clientSocket.getOutputStream());
+            toServerExecutor.submit(new ForwardHandler(
+                    ForwardHandler.Direction.CLIENT_TO_SERVER,
+                    this,
+                    clientSocket.getInputStream(),
+                    serverSocket.getOutputStream()
+            ));
+
+            toClientExecutor.submit(new ForwardHandler(
+                    ForwardHandler.Direction.SERVER_TO_CLIENT,
+                    this,
+                    serverSocket.getInputStream(),
+                    clientSocket.getOutputStream()
+            ));
 
         } catch (final UnknownHostException e) {
             try {
@@ -140,15 +156,15 @@ class RequestHandler implements Runnable {
             if(serverSocket != null){
                 serverSocket.close();
             }
+
+            ThreadUtils.shutDown(toClientExecutor);
+            ThreadUtils.shutDown(toServerExecutor);
+
         } catch (Exception e) {
             System.err.printf("Failed to close serverSocket Connection: [%s] %s",
                     e.getClass().getSimpleName(),
                     e.getMessage()
             );
         }
-    }
-
-    private void startForwarding(ForwardHandler.Direction direction, final InputStream inputStream, final OutputStream outputStream){
-        SocksProxyServer.startManagedThread(new ForwardHandler(direction, this, inputStream, outputStream));
     }
 }
