@@ -42,7 +42,7 @@ class ForwardHandler implements Runnable {
                 outputStream.write(buffer, 0, bytesRead);
                 outputStream.flush();
             }
-        } catch (IOException | InterruptedException e) {
+        } catch (IOException e) {
             System.err.printf(
                     "Forwarding interupted: [%s] %s%n",
                     e.getClass().getSimpleName(),
@@ -53,13 +53,11 @@ class ForwardHandler implements Runnable {
         requestHandler.connectionBroken();
     }
 
-    private static void interceptClientToServer() throws InterruptedException {
-        System.out.println("Sleep for 100ms");
-        Thread.sleep(100);
+    private static void interceptClientToServer() {
+        System.out.println("Request to server intercepted");
     }
 
-    private static void interceptServerToClient() throws InterruptedException {
-        System.out.println("Sleep for 200ms");
-        Thread.sleep(200);
+    private static void interceptServerToClient() {
+        System.out.println("Response from server intercepted");
     }
 }
