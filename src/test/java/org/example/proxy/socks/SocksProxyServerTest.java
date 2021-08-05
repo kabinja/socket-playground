@@ -1,7 +1,6 @@
 package org.example.proxy.socks;
 
-import lu.uni.serval.commons.runner.utils.messaging.Broker;
-import lu.uni.serval.commons.runner.utils.process.BrokerLauncher;
+import lu.uni.serval.commons.runner.utils.messaging.activemq.Broker;
 import lu.uni.serval.commons.runner.utils.process.ClassLauncher;
 import org.apache.activemq.ActiveMQConnectionFactory;
 import org.example.helpers.CapitalizeServer;
@@ -17,20 +16,20 @@ import java.net.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 class SocksProxyServerTest {
-    private static BrokerLauncher brokerLauncher;
+    private static Broker broker;
 
     @BeforeAll
     static void startBroker() throws IOException, InterruptedException {
         final String bindAddress = "tcp://localhost:61616";
         final String name = "testBroker";
 
-        brokerLauncher = new BrokerLauncher(name, bindAddress);
-        brokerLauncher.launchAndWaitForReady();
+        broker = new Broker(name, bindAddress);
+        broker.executeAndWaitForReady();
     }
 
     @AfterAll
     static void killBroker() {
-        brokerLauncher.close();
+        broker.close();
     }
 
     @Test
@@ -39,7 +38,6 @@ class SocksProxyServerTest {
         proxyServerProcess.execute(false);
 
         sendStopMessage();
-        Thread.sleep(200);
         assertFalse(proxyServerProcess.isRunning());
     }
 

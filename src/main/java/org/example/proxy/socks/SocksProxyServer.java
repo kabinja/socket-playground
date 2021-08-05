@@ -11,7 +11,8 @@ import java.util.concurrent.Executors;
 
 public class SocksProxyServer {
     private final ExecutorService executor = Executors.newCachedThreadPool();
-    private ServerSocket clientSocket;
+    private final ServerSocket clientSocket;
+
     private volatile boolean running = true;
 
     public static void main(String[] args) {
@@ -60,5 +61,10 @@ public class SocksProxyServer {
 
     public void stop(){
         running = false;
+        try {
+            this.clientSocket.close();
+        } catch (IOException e) {
+            //ignore
+        }
     }
 }
